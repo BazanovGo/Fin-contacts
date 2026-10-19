@@ -78,7 +78,9 @@ class Fetcher:
         self.offline = offline
         self.client = httpx.Client(
             headers={"User-Agent": config.USER_AGENT, "Accept-Language": "ru,en;q=0.8"},
-            timeout=config.REQUEST_TIMEOUT, follow_redirects=True, verify=_ssl_context())
+            timeout=httpx.Timeout(config.REQUEST_TIMEOUT, connect=12, pool=300),
+            limits=httpx.Limits(max_connections=64, max_keepalive_connections=16, keepalive_expiry=10),
+            follow_redirects=True, verify=_ssl_context())
         self.requests_made = 0
 
     # --- cache --------------------------------------------------------------
@@ -153,6 +155,8 @@ class Fetcher:
                 except httpx.HTTPError as e:
                     last_err = f"{type(e).__name__}: {e}"
                     page = None
+                    if isinstance(e, httpx.ConnectError) and "address" in str(e):
+                        break  # DNS failure: retrying will not help
                 finally:
                     self._host_last[host] = time.monotonic()
             if page is not None and page.status not in (429, 500, 502, 503, 504):
