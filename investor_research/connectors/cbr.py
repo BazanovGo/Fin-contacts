@@ -39,6 +39,7 @@ CARD = "/finorg/foinfo/?ogrn={ogrn}"
 LICENSE_LABEL = {"broker": "Брокерская деятельность", "dealer": "Дилерская деятельность",
                  "trust": "Деятельность по управлению ценными бумагами"}
 ACTIVE_PIF = ("Сформирован", "Формируется", "Согласован", "Зарегистрирован")
+HIST_ALT_CATEGORIES = {"Хедж", "Товарного рынка", "Фондов"}
 ALT_PIF_CATEGORIES = {"Хедж", "Товарного рынка", "Фонд рыночных финансовых инструментов", "Фонд финансовых инструментов",
                       "Фондов", "Смешанных инвестиций"}
 
@@ -67,7 +68,8 @@ def discover(db: DB, fetcher: Fetcher) -> dict[str, dict]:
     entities: dict[str, dict] = {}
 
     def ent(ogrn: str) -> dict:
-        return entities.setdefault(ogrn, {"ogrn": ogrn, "licenses": [], "pif": defaultdict(int), "kinds": set()})
+        return entities.setdefault(ogrn, {"ogrn": ogrn, "licenses": [], "pif": defaultdict(int),
+                                          "pif_hist": defaultdict(int), "kinds": set()})
 
     for kind, path in LISTS.items():
         url = BASE + path
@@ -101,22 +103,35 @@ def discover(db: DB, fetcher: Fetcher) -> dict[str, dict]:
         cols = list(df.columns)
         uk_name_col = "Полное фирменное наименование"
         uk_ogrn_col = cols[cols.index(uk_name_col) + 1]
+        hist_only: dict[str, dict] = defaultdict(lambda: defaultdict(int))
         qual_col = next((c for c in cols if str(c).startswith("Инвестиционные паи предназначены")), None)
         n = 0
         for _, r in df.iterrows():
-            if _s(r.get("Статус")) not in ACTIVE_PIF:
-                continue
             ogrn = _s(r.get(uk_ogrn_col))
             if not ogrn or not ogrn.isdigit():
                 continue
+            cat = _s(r.get("Категория")) or "?"
+            if _s(r.get("Статус")) not in ACTIVE_PIF:
+                # Funds of the pre-reform categories (hedge, commodity market, fund of funds) show the
+                # manager's experience with alternative strategies even after the fund was closed.
+                if cat in HIST_ALT_CATEGORIES and ogrn in entities:
+                    entities[ogrn]["pif_hist"][cat] += 1
+                elif cat in HIST_ALT_CATEGORIES:
+                    hist_only[ogrn][cat] += 1
+                continue
             e = ent(ogrn)
+            if _s(r.get("Тип")) == "Закрытый" and cat == "Фонд рыночных финансовых инструментов":
+                e["pif"]["ЗПИФ рыночных финансовых инструментов"] += 1
             e.setdefault("legal_name", _s(r.get(uk_name_col)))
             e["kinds"].add("uk_pif")
-            cat = _s(r.get("Категория")) or "?"
             e["pif"][cat] += 1
             if qual_col and _s(r.get(qual_col)):
                 e["pif"]["__qualified"] += 1
             n += 1
+        for ogrn, cats in hist_only.items():
+            if ogrn in entities:
+                for k, v in cats.items():
+                    entities[ogrn]["pif_hist"][k] += v
         db.coverage("cbr_pif", "Россия", url, "processed", n, f"{n} active funds")
     else:
         db.error("cbr_discover", url, page.error or page.status)
@@ -292,6 +307,7 @@ def _store_entity(db: DB, e: dict, url: str, page) -> None:
     evidence = {"registry": "Банк России", "ogrn": e["ogrn"], "status": status_ufr, "address": address,
                 "licenses_active": [l["activity"] for l in active_licenses],
                 "pif_categories": pif or None, "alt_pif": alt_pif or None,
+                "pif_historical_alt": dict(e["pif_hist"]) or None,
                 "lists": sorted(e["kinds"])}
     db.add_source(cid, url if card else BASE + "/finorg/", "regulator_registry", evidence,
                   http_status=None if isinstance(page, Exception) else page.status)

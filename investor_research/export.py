@@ -80,7 +80,8 @@ def is_trading_partner(r) -> bool:
 def is_allocator(r) -> bool:
     """Organisations with evidence of investing in external managers / trading strategies."""
     reasons = " ".join(r["_breakdown"].get("reasons", []))
-    return bool(r["allocates_external"]) or "фондом фондов" in reasons or "хедж-ПИФ" in reasons
+    return bool(r["allocates_external"]) or "фондом фондов" in reasons or "хедж-ПИФ" in reasons \
+        or "ПИФ рыночных финансовых инструментов" in reasons
 
 
 def run(db: DB) -> None:
@@ -241,8 +242,9 @@ def write_report(db: DB, rows, pri, top) -> None:
     L += ["", "Полное досье на 100 организаций: `top_100_partners.md`.", "",
           "## 6. Организации, уже инвестирующие во внешних управляющих / альтернативные стратегии", "",
           "Критерии: на собственном сайте найдены упоминания работы с внешними управляющими, фондов фондов, "
-          "финансирования трейдеров, посевного капитала; либо по реестру ЦБ РФ организация управляет хедж-ПИФ "
-          "или фондом фондов. Полный список: `external_manager_allocators.csv`.", "",
+          "финансирования трейдеров, посевного капитала; либо по реестру ЦБ РФ организация управляет закрытыми "
+          "ПИФ рыночных финансовых инструментов (современная форма хедж-фонда) или ранее управляла хедж-ПИФ, "
+          "ПИФ товарного рынка или фондом фондов. Полный список: `external_manager_allocators.csv`.", "",
           "| Организация | Страна | Score | Основание |", "|---|---|---|---|"]
     for r in allocators[:60]:
         reasons = [x for x in r["_breakdown"].get("reasons", []) if "external_managers" in x]

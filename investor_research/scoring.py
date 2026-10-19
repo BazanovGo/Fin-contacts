@@ -92,7 +92,9 @@ def score_company(db: DB, c) -> tuple[Score, dict]:
     cat = (c["category"] or "").lower()
     grp = c["priority_group"] or "D"
     pif = registry.get("pif_categories") or {}
-    n_funds = sum(v for k, v in pif.items() if not k.startswith("__"))
+    n_funds = sum(v for k, v in pif.items() if not k.startswith("__") and not k.startswith("ЗПИФ"))
+    hist = registry.get("pif_historical_alt") or {}
+    zpif_rfi = pif.get("ЗПИФ рыночных финансовых инструментов", 0)
 
     # 1. Profile fit -----------------------------------------------------------
     base = {"A": 12, "B": 9, "C": 6, "D": 4}.get(grp, 4)
@@ -101,6 +103,11 @@ def score_company(db: DB, c) -> tuple[Score, dict]:
         s.add("profile_fit", 7, f"управляет хедж-ПИФ ({pif['Хедж']}) — реестр ЦБ РФ")
     if pif.get("Товарного рынка"):
         s.add("profile_fit", 5, "управляет ПИФ товарного рынка — реестр ЦБ РФ")
+    if zpif_rfi:
+        s.add("profile_fit", 6, f"управляет закрытыми ПИФ рыночных финансовых инструментов ({zpif_rfi}) — "
+                                "современная форма хедж-фонда для квалинвесторов, реестр ЦБ РФ")
+    if hist.get("Хедж") or hist.get("Товарного рынка"):
+        s.add("profile_fit", 4, "в прошлом управляла хедж-ПИФ/ПИФ товарного рынка — реестр ПИФ ЦБ РФ")
     for sig, pts in (("hedge_fund", 5), ("family_office", 5), ("prop_trading", 4), ("alternative", 3),
                      ("trust_management", 2), ("qualified_investors", 2)):
         if signals.get(sig):
@@ -141,6 +148,8 @@ def score_company(db: DB, c) -> tuple[Score, dict]:
         s.add("external_managers", 14, f"на сайте: {SIGNAL_LABELS['external_managers']}")
     if pif.get("Фондов"):
         s.add("external_managers", 6, "управляет фондом фондов — реестр ЦБ РФ")
+    if hist.get("Фондов"):
+        s.add("external_managers", 5, "в прошлом управляла фондом фондов — реестр ПИФ ЦБ РФ")
     if pif.get("Хедж"):
         s.add("external_managers", 4, "хедж-ПИФ — инфраструктура для альтернативных стратегий")
     if signals.get("prop_trading"):
@@ -156,6 +165,12 @@ def score_company(db: DB, c) -> tuple[Score, dict]:
         s.add("markets_fit", 3, "лицензия AFSA распространяется на фьючерсы/опционы/CFD")
     if pif.get("Товарного рынка"):
         s.add("markets_fit", 5, "ПИФ товарного рынка — реестр ЦБ РФ")
+    if hist.get("Товарного рынка"):
+        s.add("markets_fit", 4, "опыт управления ПИФ товарного рынка — реестр ПИФ ЦБ РФ")
+    if hist.get("Хедж"):
+        s.add("markets_fit", 3, "опыт управления хедж-ПИФ — реестр ПИФ ЦБ РФ")
+    if zpif_rfi:
+        s.add("markets_fit", 2, "ЗПИФ РФИ может использовать производные инструменты — реестр ЦБ РФ")
     if pif.get("Хедж"):
         s.add("markets_fit", 3, "хедж-ПИФ может использовать деривативы — реестр ЦБ РФ")
 
