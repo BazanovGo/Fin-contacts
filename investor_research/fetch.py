@@ -59,6 +59,11 @@ def _ssl_context() -> ssl.SSLContext:
     return ssl.create_default_context(cafile=cafile if cafile and os.path.exists(cafile) else None)
 
 
+def _client_kwargs(ssl_ctx) -> dict:
+    return dict(headers={"User-Agent": config.USER_AGENT, "Accept-Language": "ru,en;q=0.8"},
+                timeout=httpx.Timeout(config.REQUEST_TIMEOUT, connect=12), follow_redirects=True, verify=ssl_ctx)
+
+
 class RobotsDisallowed(Exception):
     pass
 
@@ -76,11 +81,7 @@ class Fetcher:
         self._global = threading.Lock()
         self.ttl = timedelta(days=ttl_days)
         self.offline = offline
-        self.client = httpx.Client(
-            headers={"User-Agent": config.USER_AGENT, "Accept-Language": "ru,en;q=0.8"},
-            timeout=httpx.Timeout(config.REQUEST_TIMEOUT, connect=12, pool=300),
-            limits=httpx.Limits(max_connections=64, max_keepalive_connections=16, keepalive_expiry=10),
-            follow_redirects=True, verify=_ssl_context())
+        self._ssl = _ssl_context()
         self.requests_made = 0
 
     # --- cache --------------------------------------------------------------
@@ -117,7 +118,7 @@ class Fetcher:
         if not known:
             rp = urllib.robotparser.RobotFileParser()
             try:
-                r = self.client.get(base + "/robots.txt", timeout=15)
+                r = self._request(base + "/robots.txt")
                 if r.status_code == 200 and "text" in r.headers.get("content-type", "text"):
                     rp.parse(r.text.splitlines())
                 elif r.status_code in (401, 403):
@@ -130,6 +131,12 @@ class Fetcher:
                 self._robots[base] = rp
         rp = self._robots[base]
         return rp.can_fetch(config.USER_AGENT, url) and rp.can_fetch("*", url)
+
+    def _request(self, url: str) -> httpx.Response:
+        # A short-lived client per request: a shared pool leaks connections when TLS
+        # handshakes fail inside proxy tunnels, which eventually stalls every worker.
+        with httpx.Client(**_client_kwargs(self._ssl)) as client:
+            return client.get(url)
 
     def get(self, url: str, *, use_cache: bool = True, check_robots: bool = True) -> Page:
         if use_cache:
@@ -145,11 +152,12 @@ class Fetcher:
         last_err = None
         for attempt in range(config.MAX_RETRIES + 1):
             with lock:
-                wait = self._host_last.get(host, 0) + config.PER_HOST_DELAY - time.monotonic()
+                delay = config.HOST_DELAY_OVERRIDES.get(host, config.PER_HOST_DELAY)
+                wait = self._host_last.get(host, 0) + delay - time.monotonic()
                 if wait > 0:
                     time.sleep(wait)
                 try:
-                    r = self.client.get(url)
+                    r = self._request(url)
                     self.requests_made += 1
                     page = Page(url, str(r.url), r.status_code, r.content, r.headers.get("content-type", ""))
                 except httpx.HTTPError as e:
@@ -159,12 +167,17 @@ class Fetcher:
                         break  # DNS failure: retrying will not help
                 finally:
                     self._host_last[host] = time.monotonic()
-            if page is not None and page.status not in (429, 500, 502, 503, 504):
+            if page is not None and page.status in (403, 429) and attempt == config.MAX_RETRIES:
+                # Typically rate limiting: return it but cache as an error so the next run retries.
+                page.error = f"HTTP {page.status}"
+                self._store(page)
+                return page
+            if page is not None and page.status not in (403, 429, 500, 502, 503, 504):
                 self._store(page)
                 return page
             if page is not None:
                 last_err = f"HTTP {page.status}"
-            time.sleep(2 * (attempt + 1))
+            time.sleep((20 if page is not None and page.status in (403, 429) else 2) * (attempt + 1))
         if url.startswith("https://") and last_err and "SSL" in last_err:
             # Many sites use certificates outside public trust stores; the same public
             # page is often served over plain HTTP.

@@ -14,6 +14,8 @@ USER_AGENT = (
 )
 # Minimum delay between two requests to the same host, seconds.
 PER_HOST_DELAY = 1.5
+# Registries that throttle bulk access get a slower pace.
+HOST_DELAY_OVERRIDES = {"www.cbr.ru": 4.0, "naufor.ru": 2.0}
 REQUEST_TIMEOUT = 25
 MAX_RETRIES = 2
 # Cached pages younger than this are reused on re-runs (incremental mode).
