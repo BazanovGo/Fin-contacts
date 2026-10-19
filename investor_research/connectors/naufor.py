@@ -60,6 +60,7 @@ def parse_card(raw: str) -> dict:
         "site": field("1.9 Адрес официального сайта"),
         "inn": (re.search(r"3\.1 Идентификационный номер налогоплательщика\|\s*(\d{10,12})", t) or [None, None])[1],
         "licenses": [l for l in licenses if l] or ([lic_block] if lic_block else []),
+        "terminated": bool(re.search(r"8\.2 Дата прекращения членства[^|]*\|\s*\d{2}\.\d{2}\.\d{4}", t)),
     }
 
 
@@ -105,6 +106,12 @@ def ingest(db: DB, fetcher: Fetcher, limit: int | None = None) -> int:
 
 def _store(db: DB, url: str, list_name: str, c: dict) -> bool:
     legal = c["full_name"] or list_name
+    if c["inn"] and len(c["inn"]) == 12 or re.search(r"индивидуальн\w* предпринимател|^ИП ", legal or "", re.I):
+        return False  # individual (e.g. investment adviser): personal data, not an organisation
+    if not legal or len(name_key(legal)) < 3 or c.get("terminated"):
+        return False
+    if re.search(r"регистратор|депозитар|реестров", legal, re.I):
+        return False  # infrastructure, not a capital partner
     lic_text = " ".join(c["licenses"]).lower()
     if c["licenses"] and all(any(s in l.lower() for s in SKIP_TYPES) for l in c["licenses"]):
         return False  # pure infrastructure (registrars, depositories) — not a capital partner

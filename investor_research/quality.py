@@ -6,7 +6,7 @@ import logging
 from collections import Counter, defaultdict
 
 from .db import DB
-from .normalize import is_freemail, name_key, registered_domain, valid_email
+from .normalize import is_freemail, looks_personal_email, name_key, registered_domain, valid_email
 
 log = logging.getLogger("quality")
 CHILD_TABLES = ["contacts", "sources", "licenses", "partnership_opportunities", "company_identifiers"]
@@ -82,10 +82,14 @@ def dedupe(db: DB) -> int:
 
 
 def validate_contacts(db: DB) -> dict:
-    stats = {"invalid_email": 0, "freemail": 0}
+    stats = {"invalid_email": 0, "freemail": 0, "personal_removed": 0}
     with db.lock:
         for r in db.conn.execute("SELECT contact_id, contact_value FROM contacts WHERE contact_type='email'").fetchall():
-            if not valid_email(r["contact_value"]):
+            if looks_personal_email(r["contact_value"]):
+                # Data minimisation: named employee addresses are personal data — not kept.
+                db.conn.execute("DELETE FROM contacts WHERE contact_id=?", (r["contact_id"],))
+                stats["personal_removed"] += 1
+            elif not valid_email(r["contact_value"]):
                 db.conn.execute("UPDATE contacts SET verification_status='invalid', verification_note='неверный синтаксис'"
                                 " WHERE contact_id=?", (r["contact_id"],))
                 stats["invalid_email"] += 1
@@ -94,6 +98,9 @@ def validate_contacts(db: DB) -> dict:
                                 " verification_status='confirmed'", (r["contact_id"],))
                 stats["freemail"] += 1
         db.conn.commit()
+    if stats["personal_removed"]:
+        db.coverage("privacy_filter", "", "contacts", "processed", stats["personal_removed"],
+                    "именные адреса сотрудников удалены (минимизация персональных данных)")
     return stats
 
 
@@ -110,11 +117,19 @@ def promote_candidates(db: DB, min_referrers: int = 2) -> int:
         "SELECT domain, COUNT(DISTINCT company_id) n, GROUP_CONCAT(anchor, ' || ') anchors, MIN(found_on) found_on,"
         " GROUP_CONCAT(DISTINCT company_id) refs FROM discovery_candidates GROUP BY domain HAVING n >= ?",
         (min_referrers,)).fetchall()
+    from .enrich import _NOT_CANDIDATE
+    blocked = lambda d: any(d == x or d.endswith("." + x) for x in _NOT_CANDIDATE)
+    # Candidates promoted by an earlier run whose domain is now block-listed (media, ratings, ...)
+    for cid, site in db.conn.execute("SELECT company_id, website FROM companies WHERE category LIKE 'Кандидат%'"
+                                     " AND excluded_reason IS NULL").fetchall():
+        if blocked(registered_domain(site) or ""):
+            db.update_company(cid, excluded_reason="СМИ/рейтинговый ресурс, не организация-партнёр")
     added = 0
     for r in rows:
-        if r["domain"] in known:
+        if r["domain"] in known or blocked(r["domain"]):
             continue
-        anchors = [a.strip() for a in (r["anchors"] or "").split("||") if 3 <= len(a.strip()) <= 80]
+        anchors = [a.strip() for a in (r["anchors"] or "").split("||")
+                   if 3 <= len(a.strip()) <= 60 and len(a.split()) <= 6 and not a.strip().lower().startswith(("наш", "our"))]
         name = Counter(anchors).most_common(1)[0][0] if anchors else r["domain"]
         tld = r["domain"].rsplit(".", 1)[-1]
         ref_countries = Counter(c[0] for c in db.conn.execute(
@@ -129,3 +144,42 @@ def promote_candidates(db: DB, min_referrers: int = 2) -> int:
     db.coverage("crosslinks", "", "discovery_candidates", "processed", added,
                 f"{len(rows)} доменов со ссылками от ≥{min_referrers} организаций")
     return added
+
+
+def provenance_check(db: DB) -> dict:
+    """Re-open each confirmed e-mail/phone's source page from the HTTP cache and check
+    that the value is really printed there (phones: last 7 digits)."""
+    import html as _html
+    import re as _re
+    import sqlite3 as _sqlite3
+
+    from . import config
+    cache = _sqlite3.connect(config.CACHE_DB_PATH)
+    pages: dict[str, str | None] = {}
+    res = {"found": 0, "not_found": 0, "no_cached_page": 0}
+    for r in db.conn.execute("SELECT contact_type, contact_value, source_url FROM contacts WHERE"
+                             " verification_status='confirmed' AND contact_type IN ('email','phone')").fetchall():
+        u = r["source_url"]
+        if u not in pages:
+            row = cache.execute("SELECT content FROM pages WHERE url=? OR final_url=? LIMIT 1", (u, u)).fetchone()
+            raw = row[0] if row and row[0] else None
+            if raw is None:
+                pages[u] = None
+            else:
+                try:
+                    pages[u] = _html.unescape(raw.decode("utf-8"))
+                except UnicodeDecodeError:
+                    pages[u] = _html.unescape(raw.decode("cp1251", errors="replace"))
+        text = pages[u]
+        if text is None:
+            res["no_cached_page"] += 1
+            continue
+        if r["contact_type"] == "email":
+            ok = r["contact_value"].lower() in text.lower()
+        else:
+            ok = r["contact_value"][-7:] in _re.sub(r"\D", "", text)
+        res["found" if ok else "not_found"] += 1
+    db.coverage("provenance_check", "", "contacts", "processed", res["found"],
+                f"найдено на странице-источнике: {res['found']}; не найдено: {res['not_found']}; "
+                f"страница не в кэше: {res['no_cached_page']}")
+    return res

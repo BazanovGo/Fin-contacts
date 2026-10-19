@@ -16,8 +16,8 @@ from bs4 import BeautifulSoup
 from . import config
 from .db import DB, now
 from .fetch import Fetcher, RobotsDisallowed
-from .normalize import (clean_text, email_domain, extract_emails, is_freemail, is_role_address, name_key,
-                        registered_domain)
+from .normalize import (clean_text, email_domain, extract_emails, is_freemail, is_role_address, is_social,
+                        name_key, registered_domain)
 
 log = logging.getLogger("enrich")
 _SIGNAL_RE = {k: re.compile("|".join(v), re.I) for k, v in config.SIGNALS.items()}
@@ -205,7 +205,12 @@ _CANDIDATE_RE = re.compile(r"капитал|инвест|invest|capital|asset|fu
 _NOT_CANDIDATE = ("cbr.ru", "gov.ru", "gosuslugi.ru", "nalog.ru", "consultant.ru", "garant.ru", "moex.com",
                   "e-disclosure.ru", "disclosure.ru", "interfax.ru", "naufor.ru", "spbexchange.ru", "yandex.ru",
                   "google.com", "apple.com", "1c.ru", "bitrix24.ru", "1c-bitrix.ru", "tilda.cc", "wordpress.org",
-                  "rbc.ru", "kommersant.ru", "vedomosti.ru", "nrd.ru", "finuslugi.ru", "fincult.info", "mos.ru")
+                  "rbc.ru", "kommersant.ru", "vedomosti.ru", "nrd.ru", "finuslugi.ru", "fincult.info", "mos.ru",
+                  "banki.ru", "investfunds.ru", "raexpert.ru", "cbonds-congress.ru", "cbonds.ru", "selstorage.ru",
+                  "investleaders.pro", "frankrg.com", "acra-ratings.ru", "ra-national.ru", "nkr-ratings.ru",
+                  "forbes.ru", "forbes.kz", "kapital.kz", "inbusiness.kz", "kursiv.media", "kz.kursiv.media",
+                  "lsm.kz", "tengrinews.kz", "zakon.kz", "finprom.kz", "pbroker.ru", "smart-lab.ru", "tinkoff.ru", "tbank.ru", "sberbank.ru")
+_BAD_ANCHOR = re.compile(r"award|премия|рейтинг|лучш|брендбук|скачать|\.pdf|мб\b|лидир|https?://", re.I)
 
 
 def _collect_candidates(db: DB, cid: int, soup: BeautifulSoup, page_url: str, own_domains: set) -> None:
@@ -216,9 +221,12 @@ def _collect_candidates(db: DB, cid: int, soup: BeautifulSoup, page_url: str, ow
         if not href.startswith("http"):
             continue
         d = registered_domain(href)
-        if not d or d in own_domains or d.endswith(".gov.ru") or any(d == x or d.endswith("." + x) for x in _NOT_CANDIDATE):
+        if not d or d in own_domains or d.endswith(".gov.ru") or is_social(href) or \
+                any(d == x or d.endswith("." + x) for x in _NOT_CANDIDATE):
             continue
         anchor = clean_text(a.get_text(" ")) or ""
+        if _BAD_ANCHOR.search(anchor):
+            continue
         if not (_CANDIDATE_RE.search(d) or _CANDIDATE_RE.search(anchor)):
             continue
         with db.lock:

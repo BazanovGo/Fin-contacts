@@ -182,7 +182,8 @@ def write_report(db: DB, rows, pri, top) -> None:
     n_contacts = q("SELECT COUNT(*) FROM contacts c JOIN companies m USING(company_id) WHERE m.excluded_reason IS NULL"
                    " AND verification_status='confirmed' AND contact_type IN ('email','phone')").fetchone()[0]
     n_unverified = q("SELECT COUNT(*) FROM contacts WHERE verification_status!='confirmed'").fetchone()[0]
-    traced = q("SELECT COUNT(DISTINCT company_id) FROM sources").fetchone()[0]
+    traced = q("SELECT COUNT(DISTINCT s.company_id) FROM sources s JOIN companies c USING(company_id)"
+               " WHERE c.excluded_reason IS NULL").fetchone()[0]
     proven = sum(1 for r in rows if any(not x.startswith("[предположение]") for x in r["_breakdown"].get("reasons", [])
                                         if "profile_fit" in x or "capital_capacity" in x))
     allocators = [r for r in rows if is_allocator(r)]
@@ -190,6 +191,8 @@ def write_report(db: DB, rows, pri, top) -> None:
     coverage = q("SELECT * FROM source_coverage ORDER BY status, channel").fetchall()
     runs = q("SELECT * FROM collection_runs ORDER BY run_id").fetchall()
     errors = q("SELECT stage, COUNT(*) FROM run_errors GROUP BY stage").fetchall()
+    prov = q("SELECT note FROM source_coverage WHERE channel='provenance_check'").fetchone()
+    removed_personal = (q("SELECT records FROM source_coverage WHERE channel='privacy_filter'").fetchone() or [0])[0]
     unreachable = sum(1 for r in rows if r["website_status"] and not (r["website_status"] == "ok" or r["website_status"].startswith("redirect")))
     fill = {f: sum(1 for r in rows if r[f]) for f in ("website", "city", "description", "aum", "own_capital",
                                                        "investment_focus", "instruments", "head_name", "regulatory_status")}
@@ -240,6 +243,18 @@ def write_report(db: DB, rows, pri, top) -> None:
                  f"{r['partnership_score']:g} | {r['confidence_score']:g} | {r['primary_email'] or 'NULL'} | "
                  f"{r['primary_phone'] or 'NULL'} |")
     L += ["", "Полное досье на 100 организаций: `top_100_partners.md`.", "",
+          "### Лидеры по странам", "",
+          "По России доказательная база богаче (два официальных реестра с контактами и реестр ПИФ), поэтому "
+          "общий рейтинг смещён в её сторону. Ниже — лучшие организации каждой страны по Partnership Score.", ""]
+    for country, _ in by_country.most_common():
+        if country == "Россия":
+            continue
+        best = [r for r in rows if r["country"] == country][:8]
+        L.append(f"**{country}:** " + "; ".join(
+            f"{r['brand_name'] or r['legal_name']} ({r['partnership_score']:g}"
+            f"{', ' + r['primary_email'] if r['primary_email'] else ''})" for r in best))
+        L.append("")
+    L += ["",
           "## 6. Организации, уже инвестирующие во внешних управляющих / альтернативные стратегии", "",
           "Критерии: на собственном сайте найдены упоминания работы с внешними управляющими, фондов фондов, "
           "финансирования трейдеров, посевного капитала; либо по реестру ЦБ РФ организация управляет закрытыми "
@@ -247,7 +262,8 @@ def write_report(db: DB, rows, pri, top) -> None:
           "ПИФ товарного рынка или фондом фондов. Полный список: `external_manager_allocators.csv`.", "",
           "| Организация | Страна | Score | Основание |", "|---|---|---|---|"]
     for r in allocators[:60]:
-        reasons = [x for x in r["_breakdown"].get("reasons", []) if "external_managers" in x]
+        reasons = [x for x in r["_breakdown"].get("reasons", []) if "external_managers" in x
+                   or "ПИФ рыночных финансовых инструментов (" in x or "хедж-ПИФ" in x]
         L.append(f"| {r['brand_name'] or r['legal_name']} | {r['country']} | {r['partnership_score']:g} | "
                  f"{'; '.join(reasons)[:220]} |")
     L += ["", "## 7. Качество данных", "",
@@ -261,7 +277,12 @@ def write_report(db: DB, rows, pri, top) -> None:
           "принадлежность которых не подтверждена. В CSV-экспорт не попадают.",
           "- Мобильные номера и адреса на бесплатных почтовых доменах из списков членов бирж не сохраняются: "
           "часто это личные контакты.",
+          "- Именные адреса сотрудников (вида n.surname@) не хранятся даже при публикации: это персональные "
+          "данные. Удалено при последнем контроле качества: "
+          f"{removed_personal}.",
           "- Адреса сотрудников по шаблонам не угадывались. Телефоны нормализованы в E.164 (библиотека phonenumbers).",
+          "- Автоматическая сверка происхождения: каждый подтверждённый email и телефон повторно найден в "
+          f"тексте сохранённой страницы-источника — {prov[0] if prov else 'не выполнялась'}.",
           f"- Сайтов, недоступных или закрытых robots.txt при проверке: {unreachable}.",
           f"- Организаций без сайта и без подтверждённых контактов (недостаточно информации): {len(insufficient)}.", "",
           "Ошибки сбора по этапам (подробно в таблице `run_errors`):", "", "| Этап | Ошибок |", "|---|---|"]
@@ -275,7 +296,9 @@ def write_report(db: DB, rows, pri, top) -> None:
           "1. **Неравномерный охват по странам.** Россия покрыта официальными реестрами (Банк России, НАУФОР) почти "
           "полностью в части лицензированных участников. По Казахстану доступен только реестр МФЦА (AFSA). Реестр "
           "АРРФР и список членов KASE получить не удалось: сайт АРРФР недоступен из среды сбора, KASE блокирует "
-          "автоматический доступ через WAF, обход не выполнялся. Остальные страны покрыты списками членов "
+          "автоматический доступ через WAF, обход не выполнялся. Частично это компенсирует список торговых "
+          "участников AIX: сайты и телефоны оттуда, email — с официальных сайтов. Email на странице AIX скрыт "
+          "защитой Cloudflare и не декодировался. Остальные страны покрыты списками членов "
           "ассоциаций/бирж (Армения, Кыргызстан) и отобранным вручную перечнем ключевых организаций с проверкой их "
           "официальных сайтов.",
           "2. **Нелицензируемые участники.** Проп-трейдинговые фирмы, family offices и частные инвестиционные "

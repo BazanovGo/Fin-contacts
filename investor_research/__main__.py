@@ -67,6 +67,7 @@ def main(argv=None) -> int:
             elif st == "quality":
                 quality.dedupe(db)
                 log.info("contacts: %s", quality.validate_contacts(db))
+                log.info("provenance: %s", quality.provenance_check(db))
             elif st == "score":
                 scoring.run(db)
             elif st == "export":

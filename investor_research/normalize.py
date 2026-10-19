@@ -172,3 +172,19 @@ def city_from_address(address: str | None) -> str | None:
             return city
     m = re.search(r"\bг(?:ород|\.)\s*([А-ЯЁ][а-яё-]+)", address.title())
     return m.group(1) if m else None
+
+
+_SURNAME_END = re.compile(r"(ov|ova|ev|eva|in|ina|kin|kina|sky|skiy|skaya|enko|yan|ian|uk|ich|vich|shin|shina|nko|dze|"
+                          r"bayev|bayeva|bekov|ova|uly|kyzy)$")
+
+
+def looks_personal_email(e: str) -> bool:
+    """Heuristic: local part looks like a person's name (n.surname, name.surname, nsurname).
+    Such addresses are personal data and are not stored, even when published."""
+    if is_role_address(e):
+        return False
+    local = e.split("@", 1)[0].lower()
+    toks = [t for t in re.split(r"[._-]", local) if t]
+    if len(toks) >= 2 and all(t.isalpha() for t in toks[:2]) and any(len(t) >= 4 and _SURNAME_END.search(t) for t in toks):
+        return True
+    return bool(len(toks) == 1 and re.fullmatch(r"[a-z]{1,2}[a-z]{3,}(ov|ova|ev|eva|in|ina|enko|yan|sky|skaya)", local))

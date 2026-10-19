@@ -116,7 +116,8 @@ def ingest(db: DB, fetcher: Fetcher, limit: int | None = None) -> int:
         db.add_license(cid, "AFSA (AIFC)", (r["activities_raw"] or "")[:500], r["licence"], r["status"], r["date"],
                        r["details"] or LIST.format(page=1))
         db.add_source(cid, r["details"] or LIST.format(page=1), "regulator_registry",
-                      {"registry": "AFSA Public Register", "activities": acts, "approved_individuals": people})
+                      {"registry": "AFSA Public Register", "activities": acts,
+                       "senior_executive": f"{seo[0]} ({seo[1]})" if seo else None})
         n += 1
     db.coverage("afsa_authorised", "Казахстан", BASE + "/authorised/", "processed", n,
                 f"{len(rows)} firms listed, {n} with relevant activities")

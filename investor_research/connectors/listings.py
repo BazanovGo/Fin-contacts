@@ -131,7 +131,7 @@ def kse(db: DB, fetcher: Fetcher, limit=None) -> int:
 
 def ingest(db: DB, fetcher: Fetcher, limit: int | None = None) -> int:
     n = 0
-    for fn in (finarm, kse):
+    for fn in (finarm, kse, aix):
         try:
             n += fn(db, fetcher, limit)
         except Exception as ex:
@@ -146,4 +146,63 @@ def ingest(db: DB, fetcher: Fetcher, limit: int | None = None) -> int:
     db.coverage("uzse_members", "Узбекистан", "https://uzse.uz", "unreachable", 0, "сайт недоступен из среды сбора")
     db.coverage("moldse_members", "Молдова", "https://www.moldse.md", "unreachable", 0, "сайт недоступен из среды сбора")
     db.coverage("nlu_members", "Россия", "https://www.nlu.ru", "unreachable", 0, "сайт НЛУ недоступен из среды сбора")
+    return n
+
+
+AIX = "https://www.aixkz.com/en/pages/list-of-trading-members"
+AIX_REGIONS = {"1": "AIFC", "2": "Kazakhstan", "3": "International"}
+ADDRESS_COUNTRY = [("Kazakhstan", "Казахстан"), ("Russia", "Россия"), ("Moscow", "Россия"), ("UAE", "ОАЭ"),
+                   ("Dubai", "ОАЭ"), ("Abu Dhabi", "ОАЭ"), ("Uzbekistan", "Узбекистан"), ("Tashkent", "Узбекистан"),
+                   ("Kyrgyz", "Кыргызстан"), ("Armenia", "Армения"), ("Cyprus", "Кипр"), ("London", "Великобритания"),
+                   ("United Kingdom", "Великобритания"), ("Hong Kong", "Гонконг"), ("China", "Китай")]
+
+
+def aix(db: DB, fetcher: Fetcher, limit=None) -> int:
+    """Astana International Exchange trading members (name, address, phone, website).
+    E-mails on this page are hidden by Cloudflare e-mail protection and are deliberately
+    not decoded; corporate e-mails are taken from the members' own websites instead."""
+    from bs4 import BeautifulSoup
+    p = fetcher.get(AIX)
+    if not p.ok:
+        db.coverage("aix_members", "Казахстан", AIX, "unreachable", 0, str(p.error))
+        return 0
+    soup = BeautifulSoup(p.text(), "lxml")
+    n = 0
+    for item in soup.select("div.memberships__item")[:limit] if limit else soup.select("div.memberships__item"):
+        name_el = item.select_one(".memberships__item--name div")
+        name = clean_text(name_el.get_text()) if name_el else None
+        if not name:
+            continue
+        descr = [clean_text(d.get_text(" ")) for d in item.select(".memberships__item--descr > div")]
+        descr = [d for d in descr if d]
+        address = descr[0] if descr else ""
+        region = AIX_REGIONS.get(item.get("data-region"), "")
+        country = "Казахстан" if region in ("AIFC", "Kazakhstan") else \
+            next((c for k, c in ADDRESS_COUNTRY if k.lower() in address.lower()), "Другая страна")
+        site = None
+        for a in item.select(".memberships__item--descr a[href]"):
+            if "cdn-cgi" not in a["href"] and not a["href"].startswith("mailto"):
+                site = normalize_url(a["href"])
+        if not site:
+            site = normalize_url(next((d for d in descr if re.match(r"^(https?://|www\.)", d)), None))
+        bank = re.search(r"\bbank\b|банк", name, re.I)
+        cid = db.upsert_company(
+            legal_name=name, name_key=name_key(name), country=country,
+            identifiers={"domain": registered_domain(site)}, website=site,
+            city="Астана" if region == "AIFC" else ("Алматы" if "almaty" in address.lower() else None),
+            category="Банк (участник торгов AIX)" if bank else "Брокер-дилер (участник торгов AIX)",
+            priority_group="C" if bank else "B",
+            regulatory_status=f"Участник торгов Astana International Exchange ({region})")
+        db.add_source(cid, AIX, "exchange_registry", {"registry": "AIX trading members", "region": region,
+                                                      "address": address})
+        iso = {"Казахстан": "KZ", "Россия": "RU", "Узбекистан": "UZ"}.get(country, "KZ")
+        for d in descr[1:]:
+            if re.search(r"\d{3}", d) and "@" not in d and not re.match(r"^(https?://|www\.)", d):
+                for ph in _corporate_phones(d, iso):
+                    db.add_contact(cid, "phone", ph, AIX, "exchange", "confirmed", "опубликован в списке участников AIX")
+        if site:
+            db.add_contact(cid, "website", site, AIX, "exchange", "confirmed", "указан в списке участников AIX")
+        n += 1
+    db.coverage("aix_members", "Казахстан", AIX, "processed", n,
+                "email на странице скрыт защитой Cloudflare — не декодировался")
     return n

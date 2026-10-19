@@ -28,7 +28,7 @@ SIGNAL_LABELS = {
     "qualified_investors": "продукты для квалифицированных инвесторов",
     "external_managers": "работа с внешними управляющими / финансирование трейдеров / фонды фондов",
     "derivatives": "срочный рынок / деривативы / фьючерсы",
-    "commodities": "товарные рынки (нефть, газ, металлы)",
+    "commodities": "товарные активы (золото/металлы, нефть, газ)",
     "quant": "алгоритмические / количественные стратегии",
     "fund_infrastructure": "инфраструктура запуска и администрирования фондов",
     "venture_pe": "венчурные / прямые инвестиции",
@@ -108,7 +108,9 @@ def score_company(db: DB, c) -> tuple[Score, dict]:
                                 "современная форма хедж-фонда для квалинвесторов, реестр ЦБ РФ")
     if hist.get("Хедж") or hist.get("Товарного рынка"):
         s.add("profile_fit", 4, "в прошлом управляла хедж-ПИФ/ПИФ товарного рынка — реестр ПИФ ЦБ РФ")
-    for sig, pts in (("hedge_fund", 5), ("family_office", 5), ("prop_trading", 4), ("alternative", 3),
+    # A mention of hedge funds / family offices often describes target clients, not the firm itself,
+    # so these text signals carry modest weight; the category (when the firm *is* one) carries the rest.
+    for sig, pts in (("hedge_fund", 3), ("family_office", 2), ("prop_trading", 4), ("alternative", 3),
                      ("trust_management", 2), ("qualified_investors", 2)):
         if signals.get(sig):
             s.add("profile_fit", pts, f"на сайте: {SIGNAL_LABELS[sig]}")
@@ -154,11 +156,15 @@ def score_company(db: DB, c) -> tuple[Score, dict]:
         s.add("external_managers", 4, "хедж-ПИФ — инфраструктура для альтернативных стратегий")
     if signals.get("prop_trading"):
         s.add("external_managers", 4, "проп-трейдинг: капитал под торговые стратегии")
-    if signals.get("family_office"):
+    if "family office" in cat:
         s.add("external_managers", 3, "family office обычно распределяет капитал между управляющими", fact=False)
 
     # 4. Commodities / derivatives / quant -------------------------------------
-    for sig, pts in (("derivatives", 5), ("commodities", 5), ("quant", 5)):
+    # Commodity mentions are mostly gold/metal funds (exposure, not futures trading): lower weight
+    # unless the same site also mentions futures/derivatives.
+    if signals.get("commodities") and signals.get("derivatives"):
+        s.add("markets_fit", 2, "на сайте: товарные активы и производные инструменты")
+    for sig, pts in (("derivatives", 5), ("commodities", 3), ("quant", 5)):
         if signals.get(sig):
             s.add("markets_fit", pts, f"на сайте: {SIGNAL_LABELS[sig]}")
     if re.search(r"futures|contracts for differences|options", lic_text):
@@ -177,8 +183,7 @@ def score_company(db: DB, c) -> tuple[Score, dict]:
     # 5. Strategic partnership -----------------------------------------------
     if n_funds or "collective investment" in lic_text:
         s.add("strategic", 4, "может выступить УК для совместного фонда под стратегию")
-    for sig, pts in (("fund_infrastructure", 4), ("investment_holding", 3), ("venture_pe", 2), ("fintech", 2),
-                     ("family_office", 3)):
+    for sig, pts in (("fund_infrastructure", 4), ("investment_holding", 3), ("venture_pe", 2), ("fintech", 2)):
         if signals.get(sig):
             s.add("strategic", pts, f"на сайте: {SIGNAL_LABELS[sig]}")
     if "брокер" in lic_text or "as agent" in lic_text:
@@ -207,17 +212,21 @@ def opportunities(c, s: Score, meta) -> list[tuple]:
     sig, pif, lic = meta["signals"], meta["pif"], " ".join(l["license_type"] for l in meta["licenses"]).lower()
     out = []
     ext_fact = bool(sig.get("external_managers"))
-    if ext_fact or sig.get("family_office"):
+    is_fo = "family office" in (c["category"] or "").lower()
+    if ext_fact or is_fo:
         out.append(("Выделение капитала Bazanov Trading как внешнему управляющему (мандат/субсчёт)",
                     "Организация публично упоминает работу с внешними управляющими/распределение капитала"
                     if ext_fact else "Family office, как правило, распределяет капитал между управляющими",
-                    "; ".join((sig.get("external_managers") or sig.get("family_office"))[:2]),
+                    "; ".join((sig.get("external_managers") or sig.get("family_office") or ["категория: family office"])[:2]),
                     "Требуется подтверждённый трек-рекорд (обычно 2-3 года), аудит, соответствие риск-лимитам",
                     "high" if ext_fact else "medium", "fact" if ext_fact else "analytical_assumption"))
     if pif or "collective investment" in lic:
-        hedge = bool(pif.get("Хедж") or pif.get("Товарного рынка"))
+        hist = meta["registry"].get("pif_historical_alt") or {}
+        hedge = bool(pif.get("Хедж") or pif.get("Товарного рынка") or pif.get("ЗПИФ рыночных финансовых инструментов")
+                     or hist.get("Хедж") or hist.get("Товарного рынка"))
         out.append(("Совместный фонд (ЗПИФ / хедж-ПИФ / фонд МФЦА) под стратегию Bazanov Trading",
-                    "УК уже управляет " + ("хедж-ПИФ/ПИФ товарного рынка" if hedge else "паевыми/коллективными фондами")
+                    "УК уже управляет " + ("закрытыми ПИФ рыночных финансовых инструментов / имеет опыт хедж-ПИФ"
+                                           if hedge else "паевыми/коллективными фондами")
                     + " и может выступить управляющей компанией продукта",
                     json.dumps(pif, ensure_ascii=False) if pif else lic[:300],
                     "Регуляторные требования к инвестиционной декларации; возможно, только для квалифицированных инвесторов",
