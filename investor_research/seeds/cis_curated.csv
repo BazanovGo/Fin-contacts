@@ -1,0 +1,72 @@
+legal_name,brand_name,country,city,website,category,priority_group,discovery_channel,discovery_url,note
+"АО ""Halyk Finance""",Halyk Finance,Казахстан,Алматы,https://halykfinance.kz,Инвестиционная компания (брокер-дилер; управление портфелем),B,curated_known_entity,https://halykfinance.kz,Дочерняя инвестиционная компания Halyk Bank; брокер-дилер и управление портфелем
+"АО ""Фридом Финанс""",Freedom Finance Kazakhstan,Казахстан,Алматы,https://ffin.kz,Инвестиционная компания (брокер-дилер),B,curated_known_entity,https://ffin.kz,Брокер-дилер группы Freedom Holding
+"АО ""Jusan Invest""",Jusan Invest,Казахстан,Алматы,https://jusaninvest.kz,Инвестиционная компания (брокер-дилер; управление портфелем),B,curated_known_entity,https://jusaninvest.kz,
+"АО ""BCC Invest""",BCC Invest,Казахстан,Алматы,https://bcc-invest.kz,Инвестиционная компания (брокер-дилер; управление портфелем),B,curated_known_entity,https://bcc-invest.kz,Дочерняя компания Банка ЦентрКредит
+"АО ""Сентрас Секьюритиз""",Centras Securities,Казахстан,Алматы,https://cesec.kz,Инвестиционная компания (брокер-дилер; управление портфелем),B,curated_known_entity,https://cesec.kz,
+"АО ""Tengri Partners Investment Banking (Kazakhstan)""",Tengri Partners,Казахстан,Алматы,https://tengripartners.com,Инвестиционный банк / управление активами,B,curated_known_entity,https://tengripartners.com,
+"АО ""Казахстанская фондовая биржа""",KASE,Казахстан,Алматы,https://kase.kz,Биржевая инфраструктура,D,curated_known_entity,https://kase.kz,Автоматический доступ к сайту блокируется WAF
+Astana International Exchange,AIX,Казахстан,Астана,https://aix.kz,Биржевая инфраструктура,D,curated_known_entity,https://aix.kz,
+Astana International Financial Centre Authority,AIFC,Казахстан,Астана,https://aifc.kz,Инфраструктура для запуска фондов / организатор финансовых мероприятий,D,curated_known_entity,https://aifc.kz,Организатор Astana Finance Days; режим регистрации фондов МФЦА
+"АО ""Фонд национального благосостояния ""Самрук-Казына""""",Samruk-Kazyna,Казахстан,Астана,https://sk.kz,Суверенный / государственный инвестиционный фонд,C,curated_known_entity,https://sk.kz,
+"АО ""Национальный управляющий холдинг ""Байтерек""""",Baiterek,Казахстан,Астана,https://baiterek.gov.kz,Государственный инвестиционный холдинг,C,curated_known_entity,https://baiterek.gov.kz,
+"АО ""Qazaqstan Investment Corporation""",QIC,Казахстан,Астана,https://qic.kz,Государственный фонд прямых инвестиций / фонд фондов,A,curated_known_entity,https://qic.kz,Ранее Kazyna Capital Management; инвестирует через фонды и внешних управляющих
+"АО ""Единый накопительный пенсионный фонд""",ЕНПФ,Казахстан,Алматы,https://enpf.kz,Пенсионный фонд,C,curated_known_entity,https://enpf.kz,Передаёт пенсионные активы в управление лицензированным УК
+Verny Capital,Verny Capital,Казахстан,Алматы,https://vernycapital.com,Инвестиционный холдинг,A,curated_known_entity,https://vernycapital.com,
+Freedom Holding Corp.,Freedom Holding,Казахстан,Алматы,https://freedomholdingcorp.com,Международная финансовая группа,C,web_search,https://freedomholdingcorp.com/,Брокерские дочерние компании в Казахстане и Узбекистане (по данным сайта)
+"АО ""Народный сберегательный банк Казахстана""",Halyk Bank,Казахстан,Алматы,https://halykbank.kz,Банк (инвестиционное подразделение / private banking),C,curated_known_entity,https://halykbank.kz,
+"АО ""Банк ЦентрКредит""",Bank CenterCredit,Казахстан,Алматы,https://bcc.kz,Банк (инвестиционное подразделение / private banking),C,curated_known_entity,https://bcc.kz,
+"АО ""ForteBank""",ForteBank,Казахстан,Астана,https://forte.kz,Банк (инвестиционное подразделение / private banking),C,curated_known_entity,https://forte.kz,
+Astana Hub,Astana Hub,Казахстан,Астана,https://astanahub.com,FinTech / венчурная экосистема,D,curated_known_entity,https://astanahub.com,
+Ассоциация финансистов Казахстана,АФК,Казахстан,Алматы,https://afk.kz,Профессиональное объединение / организатор конференций,D,curated_known_entity,https://afk.kz,
+Kazakhstan Investment Development Fund,KIDF,Казахстан,Астана,https://kidf.kz,Государственный инвестиционный фонд,C,curated_known_entity,https://kidf.kz,
+Portfolio Investments,Portfolio Investments,Узбекистан,Ташкент,https://portfolio.uz,Инвестиционная компания (брокер; управление активами),B,web_search,https://www.uzdaily.uz/en/the-list-of-uzrce-members-is-expanding-another-investment-company-has-been-accepted/,Член биржи категории B; брокерские услуги и управление активами (UzDaily)
+TBC Capital,TBC Capital,Узбекистан,Ташкент,https://tbccapital.ge,Инвестиционный банк / брокер,B,web_search,https://gbc.ge/en/news/finanse/tbc-capital-receives-investment-intermediary-license-in-uzbekistan,Получила лицензию инвестиционного посредника в Узбекистане
+"ООО ""Freedom Finance"" (Узбекистан)",Freedom Broker Uzbekistan,Узбекистан,Ташкент,https://ffin.uz,Брокер,B,web_search,https://freedomholdingcorp.com/,Профучастник Республиканской фондовой биржи «Ташкент» (по данным Freedom Holding)
+Avesta Investment Group,Avesta,Узбекистан,Ташкент,https://avestagroup.uz,Инвестиционный банк (брокер; управление активами),B,web_search,https://coresignal.com/discover/investment-management/uzbekistan/,Инвестиционный банк с фокусом на Центральную Азию
+Uzbekistan Fund for Reconstruction and Development,UFRD,Узбекистан,Ташкент,https://ufrd.uz,Суверенный / государственный инвестиционный фонд,C,curated_known_entity,https://ufrd.uz,
+"АКБ ""Капиталбанк""",Kapitalbank,Узбекистан,Ташкент,https://kapitalbank.uz,Банк (инвестиционное подразделение),C,curated_known_entity,https://kapitalbank.uz,
+"АО ""Узпромстройбанк""",SQB,Узбекистан,Ташкент,https://sqb.uz,Банк (инвестиционное подразделение),C,curated_known_entity,https://sqb.uz,
+Республиканская фондовая биржа «Тошкент»,UZSE,Узбекистан,Ташкент,https://uzse.uz,Биржевая инфраструктура,D,curated_known_entity,https://uzse.uz,Сайт недоступен из среды сбора
+PASHA Capital,PASHA Capital,Азербайджан,Баку,https://pashacapital.az,Инвестиционная компания (брокер-дилер; управление активами),B,curated_known_entity,https://pashacapital.az,
+PASHA Holding,PASHA Holding,Азербайджан,Баку,https://pasha-holding.az,Инвестиционный холдинг,C,curated_known_entity,https://pasha-holding.az,
+Unicapital Investment Company,Unicapital,Азербайджан,Баку,https://unicapital.az,Инвестиционная компания,B,curated_known_entity,https://unicapital.az,
+Xalq Capital,Xalq Capital,Азербайджан,Баку,https://xalqcapital.az,Инвестиционная компания,B,curated_known_entity,https://xalqcapital.az,
+Azerbaijan Investment Company,AIC,Азербайджан,Баку,https://aic.az,Государственная инвестиционная компания,C,curated_known_entity,https://aic.az,
+State Oil Fund of the Republic of Azerbaijan,SOFAZ,Азербайджан,Баку,https://oilfund.az,Суверенный фонд,C,curated_known_entity,https://oilfund.az,
+Baku Stock Exchange,BSE,Азербайджан,Баку,https://bfb.az,Биржевая инфраструктура,D,curated_known_entity,https://bfb.az,
+Kapital Bank,Kapital Bank,Азербайджан,Баку,https://kapitalbank.az,Банк (инвестиционное подразделение),C,curated_known_entity,https://kapitalbank.az,
+International Bank of Azerbaijan,ABB,Азербайджан,Баку,https://abb-bank.az,Банк (инвестиционное подразделение),C,curated_known_entity,https://abb-bank.az,
+"ОАО ""Белорусская валютно-фондовая биржа""",БВФБ,Беларусь,Минск,https://www.bcse.by,Биржевая инфраструктура,D,curated_known_entity,https://www.bcse.by,
+"ЗАО ""Альфа-Банк"" (Беларусь)",Альфа-Банк Беларусь,Беларусь,Минск,https://www.alfabank.by,Банк (инвестиционное подразделение / доверительное управление),C,curated_known_entity,https://www.alfabank.by,
+"ОАО ""Приорбанк""",Приорбанк,Беларусь,Минск,https://www.priorbank.by,Банк (инвестиционное подразделение),C,curated_known_entity,https://www.priorbank.by,
+"ОАО ""Белинвестбанк""",Белинвестбанк,Беларусь,Минск,https://www.belinvestbank.by,Банк (инвестиционное подразделение),C,curated_known_entity,https://www.belinvestbank.by,
+"ОАО ""АСБ Беларусбанк""",Беларусбанк,Беларусь,Минск,https://belarusbank.by,Банк (инвестиционное подразделение),C,curated_known_entity,https://belarusbank.by,
+"ООО ""Финстор""",Finstore,Беларусь,Минск,https://finstore.by,Инвестиционная платформа / брокер,D,curated_known_entity,https://finstore.by,
+Russian-Kyrgyz Development Fund,РКФР,Кыргызстан,Бишкек,https://www.rkdf.org,Государственный фонд развития,C,curated_known_entity,https://www.rkdf.org,
+ЗАО «Кыргызская фондовая биржа»,KSE,Кыргызстан,Бишкек,https://www.kse.kg,Биржевая инфраструктура,D,curated_known_entity,https://www.kse.kg,
+"ЗАО ""Демир Кыргыз Интернэшнл Банк""",Demir Bank,Кыргызстан,Бишкек,https://demirbank.kg,Банк (инвестиционное подразделение),C,curated_known_entity,https://demirbank.kg,
+"ОАО ""Оптима Банк""",Optima Bank,Кыргызстан,Бишкек,https://www.optimabank.kg,Банк (инвестиционное подразделение),C,curated_known_entity,https://www.optimabank.kg,
+"ЗАО ""Центрально-Азиатская фондовая биржа""",CASE,Таджикистан,Душанбе,https://case.tj,Биржевая инфраструктура,D,curated_known_entity,https://case.tj,
+"ОАО ""Ориёнбонк""",Orienbank,Таджикистан,Душанбе,https://www.orienbank.tj,Банк (инвестиционное подразделение),C,curated_known_entity,https://www.orienbank.tj,
+"ГСБ РТ ""Амонатбонк""",Amonatbonk,Таджикистан,Душанбе,https://www.amonatbonk.tj,Банк (государственный),C,curated_known_entity,https://www.amonatbonk.tj,
+"ЗАО ""Спитамен Банк""",Spitamen Bank,Таджикистан,Душанбе,https://www.spitamenbank.tj,Банк (инвестиционное подразделение),C,curated_known_entity,https://www.spitamenbank.tj,
+"BC ""Victoriabank"" SA",Victoriabank,Молдова,Кишинёв,https://www.victoriabank.md,Банк (инвестиционное подразделение),C,curated_known_entity,https://www.victoriabank.md,
+"BC ""Moldova-Agroindbank"" SA",maib,Молдова,Кишинёв,https://www.maib.md,Банк (инвестиционное подразделение),C,curated_known_entity,https://www.maib.md,
+"BC ""Moldindconbank"" SA",MICB,Молдова,Кишинёв,https://www.micb.md,Банк (инвестиционное подразделение),C,curated_known_entity,https://www.micb.md,
+Bursa de Valori a Moldovei,Moldova Stock Exchange,Молдова,Кишинёв,https://www.moldse.md,Биржевая инфраструктура,D,curated_known_entity,https://www.moldse.md,Сайт недоступен из среды сбора
+Государственный банк внешнеэкономической деятельности Туркменистана,Türkmenistanyň Döwlet daşary ykdysady iş banky,Туркменистан,Ашхабад,https://www.tfeb.gov.tm,Государственный банк,C,curated_known_entity,https://www.tfeb.gov.tm,
+Ашхабадская товарно-сырьевая биржа (Государственная товарно-сырьевая биржа Туркменистана),ГТСБТ,Туркменистан,Ашхабад,https://exchange.gov.tm,Товарная биржа,D,curated_known_entity,https://exchange.gov.tm,
+Eurasian Development Bank,ЕАБР,Казахстан,Алматы,https://eabr.org,Международный институт развития,C,curated_known_entity,https://eabr.org,Штаб-квартира в Алматы; фонды и инвестиционные программы в странах ЕАЭС
+European Bank for Reconstruction and Development,EBRD,Казахстан,Алматы,https://www.ebrd.com,Международный институт развития (инвестиции в финансовый сектор),C,curated_known_entity,https://www.ebrd.com,"Представительства в Казахстане, Узбекистане, Армении, Азербайджане, Кыргызстане, Таджикистане, Молдове"
+Российский фонд прямых инвестиций,РФПИ,Россия,Москва,https://rdif.ru,Суверенный фонд прямых инвестиций,C,curated_known_entity,https://rdif.ru,
+"ПАО АФК ""Система""",АФК Система,Россия,Москва,https://sistema.ru,Инвестиционный холдинг,C,curated_known_entity,https://sistema.ru,
+Movchan's Group,Movchan's Group,Россия,Москва,https://movchansgroup.com,Инвестиционная группа / управление капиталом,A,curated_known_entity,https://movchansgroup.com,
+Cbonds,Cbonds,Россия,Санкт-Петербург,https://cbonds.ru,Организатор институциональных инвестиционных конференций / финансовые данные,D,curated_known_entity,https://cbonds.ru,
+Smart-Lab,Smart-Lab,Россия,Москва,https://smart-lab.ru,Профессиональное сообщество трейдеров и инвесторов / конференции,D,curated_known_entity,https://smart-lab.ru,Сообщество частных трейдеров и управляющих; конференции Smart-Lab
+"ПАО ""СПБ Биржа""",СПБ Биржа,Россия,Санкт-Петербург,https://spbexchange.ru,Биржевая инфраструктура,D,curated_known_entity,https://spbexchange.ru,
+"ПАО ""Московская Биржа ММВБ-РТС""",Мосбиржа,Россия,Москва,https://www.moex.com,Биржевая инфраструктура (срочный и товарный рынок),D,curated_known_entity,https://www.moex.com,Сайт недоступен из среды сбора
+Национальная ассоциация участников фондового рынка,НАУФОР,Россия,Москва,https://naufor.ru,Саморегулируемая организация / профессиональное объединение,D,curated_known_entity,https://naufor.ru,
+"ПАО ""Интеррос""",Интеррос,Россия,Москва,https://interros.ru,Инвестиционный холдинг,C,curated_known_entity,https://interros.ru,
+Skyfort Capital,Skyfort Capital,Россия,Москва,https://skyfort.capital,Multi-Family Office / управление капиталом,A,web_search,https://www.sostav.ru/blogs/281874/97478,Основатель публикует материалы о family office как ступени управления капиталом (sostav.ru)
+Amicorp Fund Services (AIFC),Amicorp,Казахстан,Астана,https://amicorp.com,Инфраструктура для запуска и администрирования фондов,D,web_search,https://www.amicorp.com/ami-news/fund-administration-license-in-astana,Первый лицензированный администратор фондов в МФЦА
